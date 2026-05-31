@@ -54,6 +54,7 @@ export function createRoom(playerName?: string) {
   const room: Room = {
     code: generateUniqueCode(),
     status: "lobby",
+    hostId: participant.id,
     participants: [participant],
     createdAt: now(),
     updatedAt: now()
@@ -74,6 +75,26 @@ export function joinRoom(code: string, playerName?: string) {
     return null;
   }
 
+  const name = displayName(playerName);
+  const existingHost = room.participants.find((p) => p.id === room.hostId);
+
+  if (existingHost && existingHost.name === name) {
+    const participant = createParticipant(playerName);
+    room.hostId = participant.id;
+    room.participants.push(participant);
+    room.updatedAt = now();
+    rooms.set(room.code, room);
+
+    return {
+      room: cloneRoom(room),
+      participantId: participant.id
+    };
+  }
+
+  if (room.participants.some((p) => p.name === name)) {
+    return null;
+  }
+
   const participant = createParticipant(playerName);
   room.participants.push(participant);
   room.updatedAt = now();
@@ -90,6 +111,28 @@ export function getRoom(code: string) {
   return room ? cloneRoom(room) : null;
 }
 
+export function startGame(code: string, participantId: string) {
+  const room = rooms.get(code);
+
+  if (!room) {
+    return { ok: false as const, error: "Room not found." };
+  }
+
+  if (room.hostId !== participantId) {
+    return { ok: false as const, error: "Only the host can start the game." };
+  }
+
+  if (room.participants.length < 2) {
+    return { ok: false as const, error: "Need at least 2 players to start." };
+  }
+
+  room.status = "active";
+  room.updatedAt = now();
+  rooms.set(room.code, room);
+
+  return { ok: true as const, room: cloneRoom(room) };
+}
+
 export function saveRoom(room: Room) {
   room.updatedAt = now();
   rooms.set(room.code, cloneRoom(room));
@@ -102,6 +145,7 @@ export function toRoomSnapshot(room: Room, viewerParticipantId?: string): RoomSn
   return {
     code: room.code,
     status: room.status,
+    hostId: room.hostId,
     participants: room.participants.map((participant) => ({ ...participant })),
     availableWords: listWords(),
     roles: [...STARTER_ROLES]
