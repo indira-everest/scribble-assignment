@@ -84,7 +84,7 @@ All players start with a score of 0. A correct guess awards 100 points. An incor
 ### Edge Cases
 
 - **Drawer submits a guess**: The system silently ignores or rejects guess submissions from the drawer's session.
-- **Multiple correct guesses**: Multiple guessers can each score 100 points if they all guess the secret word correctly.
+- **Multiple correct guesses**: The first correct guess immediately ends the round. Near-simultaneous correct guesses (race condition) are handled below.
 - **Canvas clear on blank canvas**: Clearing when no strokes exist is a silent no-op.
 - **Extremely long guess text**: Guess text is reasonably truncated or rejected to prevent abuse.
 - **Special characters and unicode**: Case-insensitive matching handles accented characters as the locale would expect.
@@ -131,7 +131,7 @@ All players start with a score of 0. A correct guess awards 100 points. An incor
 
 - Canvas strokes are stored server-side and polled by guessers (consistent with the established HTTP polling pattern — no WebSockets). Each stroke is synced to the server when the drawer lifts the pointer (auto-sync on stroke end).
 - The canvas uses a simple freeform drawing mode (single brush, no color picker, no stroke width control) for the initial implementation.
-- A correct guess does NOT end the round; multiple guessers can each guess correctly and receive 100 points.
+- A correct guess automatically ends the round and transitions the room to "results" status. Only the first correct guess triggers the transition; subsequent guesses are still accepted but do not change status.
 - The drawer does not need to see the guess input form — their role is to draw and observe guesses.
 - Guess history is visible to both drawer and guessers, allowing the drawer to see who is guessing what.
 - The game page from 002-game-start-drawer-flow already provides the layout (canvas placeholder, guess form placeholder, player info, scoreboard placeholder).

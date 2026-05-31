@@ -240,17 +240,18 @@ describe("roomStore", () => {
     }
   });
 
-  it("submitGuess correct guess awards 100 points", () => {
+  it("submitGuess correct guess awards 100 points and ends round", () => {
     const { room: createdRoom, participantId: hostId } = createRoom("Alice");
     const joiner = joinRoom(createdRoom.code, "Bob")!;
     const start = startGame(createdRoom.code, hostId);
     expect(start.ok).toBe(true);
     const secretWord = start.ok ? start.room.secretWord! : "";
 
-    submitGuess(createdRoom.code, joiner.participantId, secretWord);
+    const result = submitGuess(createdRoom.code, joiner.participantId, secretWord);
     const room = getRoom(createdRoom.code)!;
 
     expect(room.scores[joiner.participantId]).toBe(100);
+    expect(room.status).toBe("results");
   });
 
   it("submitGuess incorrect guess awards 0 points", () => {

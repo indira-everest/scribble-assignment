@@ -261,6 +261,7 @@ export function submitGuess(code: string, participantId: string, text: string) {
 
   if (isCorrect) {
     room.scores[participantId] = (room.scores[participantId] ?? 0) + 100;
+    room.status = "results";
   } else {
     room.scores[participantId] = (room.scores[participantId] ?? 0) + 0;
   }
