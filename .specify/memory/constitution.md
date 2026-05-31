@@ -1,50 +1,90 @@
-# [PROJECT_NAME] Constitution
-<!-- Example: Spec Constitution, TaskFlow Constitution, etc. -->
+<!--
+  Sync Impact Report
+  Version change: (template) → 1.0.0
+  Modified principles: N/A (all new — first fill-in from template)
+  Added sections: Core Principles I–V, Additional Constraints, Development Workflow & Quality Gates, Governance
+  Removed sections: None
+  Templates requiring updates:
+    - .specify/templates/plan-template.md       ✅ generic, no principle name changes needed
+    - .specify/templates/spec-template.md        ✅ no constitution references
+    - .specify/templates/tasks-template.md       ✅ no constitution references
+    - .specify/templates/checklist-template.md   ✅ no constitution references
+    - .specify/templates/constitution-template.md ⚠ source template — only used for initial creation
+    - AGENTS.md                                  ✅ principles already aligned
+    - README.md                                  ✅ principles already aligned
+  Follow-up TODOs: None — all placeholders resolved.
+-->
+
+# Scribble Constitution
 
 ## Core Principles
 
-### [PRINCIPLE_1_NAME]
-<!-- Example: I. Library-First -->
-[PRINCIPLE_1_DESCRIPTION]
-<!-- Example: Every feature starts as a standalone library; Libraries must be self-contained, independently testable, documented; Clear purpose required - no organizational-only libraries -->
+### I. TypeScript-First & Type Safety
 
-### [PRINCIPLE_2_NAME]
-<!-- Example: II. CLI Interface -->
-[PRINCIPLE_2_DESCRIPTION]
-<!-- Example: Every library exposes functionality via CLI; Text in/out protocol: stdin/args → stdout, errors → stderr; Support JSON + human-readable formats -->
+Every module MUST be fully typed. Avoid `any`; use `unknown` for
+dynamically-typed values. All request payloads and responses MUST be
+validated with Zod schemas. Prefer immutable data structures and pure
+functions. Use functional React components with strict hooks.
 
-### [PRINCIPLE_3_NAME]
-<!-- Example: III. Test-First (NON-NEGOTIABLE) -->
-[PRINCIPLE_3_DESCRIPTION]
-<!-- Example: TDD mandatory: Tests written → User approved → Tests fail → Then implement; Red-Green-Refactor cycle strictly enforced -->
+### II. HTTP Polling, No Real-Time Sync
 
-### [PRINCIPLE_4_NAME]
-<!-- Example: IV. Integration Testing -->
-[PRINCIPLE_4_DESCRIPTION]
-<!-- Example: Focus areas requiring integration tests: New library contract tests, Contract changes, Inter-service communication, Shared schemas -->
+All client-server synchronisation MUST use HTTP polling. WebSockets,
+Socket.io, and any real-time push protocol are strictly forbidden.
+Lobby state MUST poll at approximately 2-second intervals. Game state
+(endpoints for guesses, scores, results) MUST be fetched via periodic
+GET requests.
 
-### [PRINCIPLE_5_NAME]
-<!-- Example: V. Observability, VI. Versioning & Breaking Changes, VII. Simplicity -->
-[PRINCIPLE_5_DESCRIPTION]
-<!-- Example: Text I/O ensures debuggability; Structured logging required; Or: MAJOR.MINOR.BUILD format; Or: Start simple, YAGNI principles -->
+### III. In-Memory State, No Persistence
 
-## [SECTION_2_NAME]
-<!-- Example: Additional Constraints, Security Requirements, Performance Standards, etc. -->
+All game state MUST be held in memory only. No database (SQL, NoSQL,
+SQLite, or similar) is permitted. Inactive rooms MUST be explicitly
+removed to keep the memory footprint minimal. Restarting the backend
+clears all state — this is by design.
 
-[SECTION_2_CONTENT]
-<!-- Example: Technology stack requirements, compliance standards, deployment policies, etc. -->
+### IV. Specification-First Development
 
-## [SECTION_3_NAME]
-<!-- Example: Development Workflow, Review Process, Quality Gates, etc. -->
+MUST follow the Spec Kit loop: Discovery → Specify → Clarify → Plan →
+Tasks → Implement → Validate. Acceptance criteria MUST be defined
+before implementation begins. Every feature MUST be independently
+testable. The constitution, spec, plan, and tasks MUST be kept
+internally consistent and traceable to the implementation.
 
-[SECTION_3_CONTENT]
-<!-- Example: Code review requirements, testing gates, deployment approval process, etc. -->
+### V. Critical Self-Review & Deterministic Game Logic
+
+AI-generated output MUST be critically reviewed before committing.
+Do not commit code you do not fully understand. Game rules MUST be
+deterministic: secret word selection, scoring (100 points for a correct
+guess, 0 otherwise), and case-insensitive guess comparison. Empty or
+whitespace-only inputs MUST be rejected. The host MUST be tracked and
+host-only actions (start game, restart) MUST be enforced server-side.
+
+## Additional Constraints
+
+- No authentication, sessions, JWT, or OAuth
+- No new state-management or routing libraries beyond what the starter ships
+- No multiple rounds, drawer rotation, timers, countdowns, or speed bonuses
+- No custom or random word packs beyond the starter seed list
+- No spectator mode, moderation features (kick, mute), or room passwords
+- No rewriting the starter from scratch
+- No unjustified top-level dependencies
+- No unrelated refactors — changes MUST be scoped to the feature under work
+
+## Development Workflow & Quality Gates
+
+- Commits MUST be granular, meaningful, and traceable to the spec
+- Build validation MUST pass: both `backend` and `frontend` MUST compile without errors
+- Tests MUST pass (`vitest run` in each directory) before a feature is considered complete
+- Each user story in the spec MUST be independently demonstrable
+- Verify acceptance criteria using two browser tabs before marking a scenario complete
+- Complexity that violates the simplicity principle MUST be justified in the plan
 
 ## Governance
-<!-- Example: Constitution supersedes all other practices; Amendments require documentation, approval, migration plan -->
 
-[GOVERNANCE_RULES]
-<!-- Example: All PRs/reviews must verify compliance; Complexity must be justified; Use [GUIDANCE_FILE] for runtime development guidance -->
+This constitution supersedes all ad-hoc development practices. Amendments
+MUST be documented by updating this file alongside the change that
+motivated them. Versioning follows semantic rules: MAJOR for backward-
+incompatible principle changes or removals, MINOR for new principles or
+sections, PATCH for clarifications and non-semantic refinements.
+Compliance is verified during implementation reviews.
 
-**Version**: [CONSTITUTION_VERSION] | **Ratified**: [RATIFICATION_DATE] | **Last Amended**: [LAST_AMENDED_DATE]
-<!-- Example: Version: 2.1.1 | Ratified: 2025-06-13 | Last Amended: 2025-07-16 -->
+**Version**: 1.0.0 | **Ratified**: 2026-05-18 | **Last Amended**: 2026-05-31
