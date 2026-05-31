@@ -566,3 +566,37 @@ input {
     justify-content: stretch;
   }
 }
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.badge--drawer {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.drawer-word-prompt {
+  display: grid;
+  gap: 12px;
+  text-align: center;
+}
+
+.drawer-word-prompt__label {
+  color: var(--ink-soft);
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.drawer-word-prompt__word {
+  color: var(--brand-strong);
+  font-size: 2rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}

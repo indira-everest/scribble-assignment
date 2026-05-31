@@ -2,6 +2,14 @@ import { randomUUID } from "node:crypto";
 import type { Participant, Room, RoomSnapshot } from "../models/game.js";
 import { STARTER_ROLES, STARTER_WORDS } from "../seed/starterData.js";
 
+function djb2Hash(input: string): number {
+  let hash = 5381;
+  for (let i = 0; i < input.length; i++) {
+    hash = ((hash << 5) + hash + input.charCodeAt(i)) & 0xffffffff;
+  }
+  return hash >>> 0;
+}
+
 const rooms = new Map<string, Room>();
 
 function now() {
@@ -57,7 +65,11 @@ export function createRoom(playerName?: string) {
     hostId: participant.id,
     participants: [participant],
     createdAt: now(),
-    updatedAt: now()
+    updatedAt: now(),
+    roundNumber: 0,
+    drawerId: null,
+    secretWord: null,
+    orderedWords: [...STARTER_WORDS].sort()
   };
 
   rooms.set(room.code, room);
@@ -126,7 +138,22 @@ export function startGame(code: string, participantId: string) {
     return { ok: false as const, error: "Need at least 2 players to start." };
   }
 
+  if (room.status === "active") {
+    return { ok: false as const, error: "Game already started." };
+  }
+
+  if (room.orderedWords.length === 0) {
+    return { ok: false as const, error: "No words available." };
+  }
+
+  const hash = djb2Hash(`${room.code}-${1}`);
+  const wordIndex = hash % room.orderedWords.length;
+  const selectedWord = room.orderedWords[wordIndex];
+
   room.status = "active";
+  room.roundNumber = 1;
+  room.drawerId = room.hostId;
+  room.secretWord = selectedWord;
   room.updatedAt = now();
   rooms.set(room.code, room);
 
@@ -140,14 +167,16 @@ export function saveRoom(room: Room) {
 }
 
 export function toRoomSnapshot(room: Room, viewerParticipantId?: string): RoomSnapshot {
-  void viewerParticipantId;
-
   return {
     code: room.code,
     status: room.status,
     hostId: room.hostId,
     participants: room.participants.map((participant) => ({ ...participant })),
     availableWords: listWords(),
-    roles: [...STARTER_ROLES]
+    roles: [...STARTER_ROLES],
+    roundNumber: room.roundNumber,
+    drawerId: room.drawerId,
+    secretWord: viewerParticipantId === room.drawerId ? room.secretWord : null,
+    orderedWords: [...room.orderedWords]
   };
 }

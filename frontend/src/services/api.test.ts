@@ -8,6 +8,10 @@ const mockRoom = {
   participants: [],
   availableWords: [],
   roles: [],
+  roundNumber: 0,
+  drawerId: null,
+  secretWord: null,
+  orderedWords: [],
 };
 
 describe("api service", () => {

@@ -88,7 +88,11 @@ export function createRoomsRouter() {
       const result = startGame(code.toUpperCase(), participantId);
 
       if (!result.ok) {
-        const status = result.error === "Room not found." ? 404 : 403;
+        const statusMap: Record<string, number> = {
+          "Room not found.": 404,
+          "Game already started.": 409
+        };
+        const status = statusMap[result.error] ?? 403;
         throw new HttpError(status, result.error);
       }
 

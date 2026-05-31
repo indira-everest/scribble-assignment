@@ -22,12 +22,14 @@ export function GamePage() {
   }
 
   const viewer = room.participants.find((participant) => participant.id === participantId) ?? null;
+  const isDrawer = room.drawerId === participantId;
+  const drawer = room.participants.find((p) => p.id === room.drawerId) ?? null;
 
   return (
     <section className="panel game-page">
       <div className="game-page__header">
         <div className="game-page__header-left">
-          <span className="section-kicker">Round 1</span>
+          <span className="section-kicker">Round {room.roundNumber}</span>
           <h1 className="game-page__title">Guess the Word!</h1>
         </div>
         <RoomCodeBadge code={room.code} />
@@ -42,7 +44,14 @@ export function GamePage() {
         <div className="game-page__main">
           <Card title="Canvas">
             <div className="canvas-placeholder" style={{ minHeight: '500px', backgroundColor: '#ffffff', border: '1px solid #e5e7eb' }}>
-              Waiting for drawer...
+              {isDrawer ? (
+                <div className="drawer-word-prompt">
+                  <p className="drawer-word-prompt__label">Your word to draw:</p>
+                  <p className="drawer-word-prompt__word">{room.secretWord ?? "—"}</p>
+                </div>
+              ) : (
+                "Waiting for drawer... The drawing will appear here."
+              )}
             </div>
           </Card>
         </div>
@@ -56,14 +65,22 @@ export function GamePage() {
               </div>
               <div>
                 <dt>Status</dt>
-                <dd>Playing</dd>
+                <dd>{isDrawer ? "Drawing" : "Guessing"}</dd>
               </div>
+              {drawer ? (
+                <div>
+                  <dt>Drawer</dt>
+                  <dd><span className="badge badge--drawer">{drawer.name}</span></dd>
+                </div>
+              ) : null}
             </dl>
           </Card>
 
-          <Card title="Your Guess">
-            <GuessForm />
-          </Card>
+          {isDrawer ? null : (
+            <Card title="Your Guess">
+              <GuessForm />
+            </Card>
+          )}
         </aside>
       </div>
 

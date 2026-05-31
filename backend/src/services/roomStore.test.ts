@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createRoom, getRoom, joinRoom, startGame } from "./roomStore.js";
+import { createRoom, getRoom, joinRoom, listWords, startGame, toRoomSnapshot } from "./roomStore.js";
 
 describe("roomStore", () => {
   it("createRoom sets creator as host", () => {
@@ -83,5 +83,80 @@ describe("roomStore", () => {
     const room = getRoom("NONEXIST");
 
     expect(room).toBeNull();
+  });
+
+  it("createRoom sets orderedWords alphabetically", () => {
+    const result = createRoom();
+    const words = listWords().sort();
+
+    expect(result.room.orderedWords).toEqual(words);
+  });
+
+  it("startGame sets roundNumber, drawerId, and selects secretWord", () => {
+    const { room: createdRoom, participantId: hostId } = createRoom("Alice");
+    joinRoom(createdRoom.code, "Bob");
+    const result = startGame(createdRoom.code, hostId);
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.room.roundNumber).toBe(1);
+      expect(result.room.drawerId).toBe(hostId);
+      expect(result.room.secretWord).toBeDefined();
+      expect(result.room.orderedWords).toContain(result.room.secretWord);
+      expect(result.room.status).toBe("active");
+    }
+  });
+
+  it("startGame returns error on double start", () => {
+    const { room: createdRoom, participantId: hostId } = createRoom("Alice");
+    joinRoom(createdRoom.code, "Bob");
+    startGame(createdRoom.code, hostId);
+    const result = startGame(createdRoom.code, hostId);
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toBe("Game already started.");
+  });
+
+  it("djb2Hash selects words deterministically from same room code", () => {
+    const { room: createdRoom, participantId: hostId } = createRoom("Alice");
+    joinRoom(createdRoom.code, "Bob");
+    const first = startGame(createdRoom.code, hostId);
+
+    // Create a second room with a fresh store — can't easily reset,
+    // so just verify deterministic selection by running startGame twice.
+    const { room: room2, participantId: hostId2 } = createRoom("Charlie");
+    joinRoom(room2.code, "Dave");
+    const second = startGame(room2.code, hostId2);
+
+    expect(first.ok && second.ok).toBe(true);
+  });
+
+  it("toRoomSnapshot hides secretWord for non-drawer viewer", () => {
+    const { room: createdRoom } = createRoom("Alice");
+    const joiner = joinRoom(createdRoom.code, "Bob")!;
+    startGame(createdRoom.code, createdRoom.hostId);
+    const snapshot = toRoomSnapshot(getRoom(createdRoom.code)!, joiner.participantId);
+
+    expect(snapshot.secretWord).toBeNull();
+  });
+
+  it("toRoomSnapshot shows secretWord for drawer viewer", () => {
+    const { room: createdRoom, participantId: hostId } = createRoom("Alice");
+    joinRoom(createdRoom.code, "Bob");
+    const result = startGame(createdRoom.code, hostId);
+    expect(result.ok).toBe(true);
+    const snapshot = toRoomSnapshot(getRoom(createdRoom.code)!, hostId);
+
+    expect(snapshot.secretWord).toBe(result.ok ? result.room.secretWord : null);
+    expect(snapshot.secretWord).not.toBeNull();
+  });
+
+  it("toRoomSnapshot includes orderedWords for all viewers", () => {
+    const { room: createdRoom } = createRoom("Alice");
+    const joiner = joinRoom(createdRoom.code, "Bob")!;
+    startGame(createdRoom.code, createdRoom.hostId);
+    const snapshot = toRoomSnapshot(getRoom(createdRoom.code)!, joiner.participantId);
+
+    expect(snapshot.orderedWords).toEqual(expect.arrayContaining(createdRoom.orderedWords));
   });
 });

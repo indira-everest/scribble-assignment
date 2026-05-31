@@ -13,6 +13,10 @@ export interface RoomSnapshot {
   participants: Participant[];
   availableWords: string[];
   roles: ParticipantRole[];
+  roundNumber: number;
+  drawerId: string | null;
+  secretWord: string | null;
+  orderedWords: string[];
 }
 
 export interface RoomSessionResponse {
