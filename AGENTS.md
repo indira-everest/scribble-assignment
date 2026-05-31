@@ -42,6 +42,6 @@ You are working on a monolithic repository for a multiplayer drawing game ("Scri
 -   When creating or editing files, ensure consistency with the existing directory structure detailed above.
 
 <!-- SPECKIT START -->
-For additional context about technologies to be used, project structure,
-shell commands, and other important information, read the current plan
+See the current plan at `specs/001-room-setup-lobby/plan.md` for detailed
+technical context, data model, API contracts, and implementation approach.
 <!-- SPECKIT END -->
