@@ -42,6 +42,7 @@ You are working on a monolithic repository for a multiplayer drawing game ("Scri
 -   When creating or editing files, ensure consistency with the existing directory structure detailed above.
 
 <!-- SPECKIT START -->
-See the current plan at `specs/001-room-setup-lobby/plan.md` for detailed
-technical context, data model, API contracts, and implementation approach.
+Current features:
+- `specs/001-room-setup-lobby/plan.md` — Room Setup & Lobby (host tracking, join validation, lobby polling, host-only game start)
+- `specs/002-game-start-drawer-flow/plan.md` — Game Start & Drawer Flow (role assignment, deterministic word selection, word visibility gating, name validation)
 <!-- SPECKIT END -->
