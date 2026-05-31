@@ -12,6 +12,7 @@ export function LobbyPage() {
   const roomStore = useRoomStore();
   const { room, participantId, error, isLoading } = useRoomState();
   const [refreshError, setRefreshError] = useState<string | null>(null);
+  const [starting, setStarting] = useState(false);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const isHost = room !== null && participantId !== null && room.hostId === participantId;
@@ -61,11 +62,15 @@ export function LobbyPage() {
   }
 
   async function handleStart() {
+    if (starting) return;
     try {
+      setStarting(true);
       setRefreshError(null);
       await roomStore.startGame();
     } catch (caughtError) {
       setRefreshError(caughtError instanceof Error ? caughtError.message : "Unable to start game");
+    } finally {
+      setStarting(false);
     }
   }
 
@@ -115,8 +120,8 @@ export function LobbyPage() {
           {isLoading ? "Refreshing..." : "Refresh Room"}
         </button>
         {isHost ? (
-          <button className="button button--primary" disabled={isLoading || room.participants.length < 2} onClick={handleStart}>
-            {isLoading ? "Starting..." : "Start Game"}
+          <button className="button button--primary" disabled={isLoading || starting || room.participants.length < 2} onClick={handleStart}>
+            {starting ? "Starting..." : isLoading ? "Refreshing..." : "Start Game"}
           </button>
         ) : (
           <button className="button button--primary" disabled>
