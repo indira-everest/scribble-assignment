@@ -4,6 +4,7 @@ import { Card } from "../components/Card";
 import { DrawingCanvas } from "../components/DrawingCanvas";
 import { GuessForm } from "../components/GuessForm";
 import { ResultPanel } from "../components/ResultPanel";
+import { ResultsPanel } from "../components/ResultsPanel";
 import { RoomCodeBadge } from "../components/RoomCodeBadge";
 import { Scoreboard } from "../components/Scoreboard";
 import { useRoomState, useRoomStore } from "../state/roomStore";
@@ -22,6 +23,7 @@ export function GamePage() {
   }, [navigate, room]);
 
   const isDrawer = room !== null && room.drawerId === participantId;
+  const isHost = room !== null && room.hostId === participantId;
 
   useEffect(() => {
     if (!room) return;
@@ -60,8 +62,31 @@ export function GamePage() {
     }
   }
 
+  async function handleEndRound() {
+    try {
+      await roomStore.endRound();
+    } catch {
+    }
+  }
+
+  async function handleRestart() {
+    try {
+      await roomStore.restartGame();
+      navigate("/lobby");
+    } catch {
+    }
+  }
+
   if (!room || !participantId) {
     return null;
+  }
+
+  if (room.status === "results") {
+    return (
+      <section className="panel game-page">
+        <ResultsPanel room={room} isHost={isHost} onRestart={handleRestart} />
+      </section>
+    );
   }
 
   const viewer = room.participants.find((p) => p.id === participantId) ?? null;
@@ -144,6 +169,16 @@ export function GamePage() {
               </ul>
             )}
           </Card>
+
+          {isHost ? (
+            <Card title="Host Actions">
+              <div className="button-row">
+                <button className="button button--secondary" onClick={handleEndRound}>
+                  End Round
+                </button>
+              </div>
+            </Card>
+          ) : null}
         </aside>
       </div>
 

@@ -8,14 +8,18 @@ import {
   startGameSchema,
   strokeSchema,
   clearStrokesSchema,
-  guessSchema
+  guessSchema,
+  endRoundSchema,
+  restartSchema
 } from "./schemas.js";
 import {
   addStroke,
   clearStrokes,
   createRoom,
+  endRound,
   getRoom,
   joinRoom,
+  restartGame,
   startGame,
   submitGuess,
   toRoomSnapshot
@@ -156,6 +160,30 @@ export function createRoomsRouter() {
     }
   });
 
+  router.post("/:code/end-round", (request, response, next) => {
+    try {
+      const { code } = roomCodeParamsSchema.parse(request.params);
+      const { participantId } = endRoundSchema.parse(request.body);
+      const result = endRound(code.toUpperCase(), participantId);
+
+      if (!result.ok) {
+        const statusMap: Record<string, number> = {
+          "Room not found.": 404,
+          "Only the host can end the round.": 403,
+          "Round is not active.": 400
+        };
+        const status = statusMap[result.error] ?? 500;
+        throw new HttpError(status, result.error);
+      }
+
+      response.json({
+        room: toRoomSnapshot(result.room, participantId)
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
+
   router.post("/:code/guess", (request, response, next) => {
     try {
       const { code } = roomCodeParamsSchema.parse(request.params);
@@ -167,6 +195,30 @@ export function createRoomsRouter() {
           "Room not found.": 404,
           "The drawer cannot submit guesses.": 403,
           "Guess cannot be empty.": 400
+        };
+        const status = statusMap[result.error] ?? 500;
+        throw new HttpError(status, result.error);
+      }
+
+      response.json({
+        room: toRoomSnapshot(result.room, participantId)
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.post("/:code/restart", (request, response, next) => {
+    try {
+      const { code } = roomCodeParamsSchema.parse(request.params);
+      const { participantId } = restartSchema.parse(request.body);
+      const result = restartGame(code.toUpperCase(), participantId);
+
+      if (!result.ok) {
+        const statusMap: Record<string, number> = {
+          "Room not found.": 404,
+          "Only the host can restart the game.": 403,
+          "Game is not in results.": 400
         };
         const status = statusMap[result.error] ?? 500;
         throw new HttpError(status, result.error);

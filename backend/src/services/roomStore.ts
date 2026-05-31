@@ -90,6 +90,10 @@ export function joinRoom(code: string, playerName?: string) {
     return null;
   }
 
+  if (room.status === "results") {
+    return null;
+  }
+
   const name = displayName(playerName);
   const existingHost = room.participants.find((p) => p.id === room.hostId);
 
@@ -205,6 +209,28 @@ export function clearStrokes(code: string, participantId: string) {
   return { ok: true as const, room: cloneRoom(room) };
 }
 
+export function endRound(code: string, participantId: string) {
+  const room = rooms.get(code);
+
+  if (!room) {
+    return { ok: false as const, error: "Room not found." };
+  }
+
+  if (room.hostId !== participantId) {
+    return { ok: false as const, error: "Only the host can end the round." };
+  }
+
+  if (room.status !== "active") {
+    return { ok: false as const, error: "Round is not active." };
+  }
+
+  room.status = "results";
+  room.updatedAt = now();
+  rooms.set(room.code, room);
+
+  return { ok: true as const, room: cloneRoom(room) };
+}
+
 export function submitGuess(code: string, participantId: string, text: string) {
   const room = rooms.get(code);
 
@@ -245,6 +271,34 @@ export function submitGuess(code: string, participantId: string, text: string) {
   return { ok: true as const, room: cloneRoom(room) };
 }
 
+export function restartGame(code: string, participantId: string) {
+  const room = rooms.get(code);
+
+  if (!room) {
+    return { ok: false as const, error: "Room not found." };
+  }
+
+  if (room.hostId !== participantId) {
+    return { ok: false as const, error: "Only the host can restart the game." };
+  }
+
+  if (room.status !== "results") {
+    return { ok: false as const, error: "Game is not in results." };
+  }
+
+  room.status = "lobby";
+  room.drawerId = null;
+  room.secretWord = null;
+  room.roundNumber = 0;
+  room.strokes = [];
+  room.guesses = [];
+  room.scores = {};
+  room.updatedAt = now();
+  rooms.set(room.code, room);
+
+  return { ok: true as const, room: cloneRoom(room) };
+}
+
 export function toRoomSnapshot(room: Room, viewerParticipantId?: string): RoomSnapshot {
   return {
     code: room.code,
@@ -255,7 +309,7 @@ export function toRoomSnapshot(room: Room, viewerParticipantId?: string): RoomSn
     roles: [...STARTER_ROLES],
     roundNumber: room.roundNumber,
     drawerId: room.drawerId,
-    secretWord: viewerParticipantId === room.drawerId ? room.secretWord : null,
+    secretWord: room.status === "results" || viewerParticipantId === room.drawerId ? room.secretWord : null,
     orderedWords: [...room.orderedWords],
     strokes: [...room.strokes],
     guesses: [...room.guesses],
