@@ -12,6 +12,9 @@ const mockRoom = {
   drawerId: null,
   secretWord: null,
   orderedWords: [],
+  strokes: [],
+  guesses: [],
+  scores: {},
 };
 
 describe("api service", () => {

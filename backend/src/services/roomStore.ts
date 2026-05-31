@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import type { Participant, Room, RoomSnapshot } from "../models/game.js";
+import type { GuessEntry, Participant, Room, RoomSnapshot } from "../models/game.js";
 import { STARTER_ROLES, STARTER_WORDS } from "../seed/starterData.js";
 
 function djb2Hash(input: string): number {
@@ -69,7 +69,10 @@ export function createRoom(playerName?: string) {
     roundNumber: 0,
     drawerId: null,
     secretWord: null,
-    orderedWords: [...STARTER_WORDS].sort()
+    orderedWords: [...STARTER_WORDS].sort(),
+    strokes: [],
+    guesses: [],
+    scores: {}
   };
 
   rooms.set(room.code, room);
@@ -166,6 +169,82 @@ export function saveRoom(room: Room) {
   return getRoom(room.code);
 }
 
+export function addStroke(code: string, participantId: string, stroke: { points: Array<{ x: number; y: number }> }) {
+  const room = rooms.get(code);
+
+  if (!room) {
+    return { ok: false as const, error: "Room not found." };
+  }
+
+  if (room.drawerId !== participantId) {
+    return { ok: false as const, error: "Only the drawer can draw." };
+  }
+
+  room.strokes.push(stroke);
+  room.updatedAt = now();
+  rooms.set(room.code, room);
+
+  return { ok: true as const, room: cloneRoom(room) };
+}
+
+export function clearStrokes(code: string, participantId: string) {
+  const room = rooms.get(code);
+
+  if (!room) {
+    return { ok: false as const, error: "Room not found." };
+  }
+
+  if (room.drawerId !== participantId) {
+    return { ok: false as const, error: "Only the drawer can clear the canvas." };
+  }
+
+  room.strokes = [];
+  room.updatedAt = now();
+  rooms.set(room.code, room);
+
+  return { ok: true as const, room: cloneRoom(room) };
+}
+
+export function submitGuess(code: string, participantId: string, text: string) {
+  const room = rooms.get(code);
+
+  if (!room) {
+    return { ok: false as const, error: "Room not found." };
+  }
+
+  if (room.drawerId === participantId) {
+    return { ok: false as const, error: "The drawer cannot submit guesses." };
+  }
+
+  const trimmed = text.trim();
+
+  if (!trimmed) {
+    return { ok: false as const, error: "Guess cannot be empty." };
+  }
+
+  const isCorrect = trimmed.toLowerCase() === (room.secretWord ?? "").toLowerCase();
+
+  const entry: GuessEntry = {
+    participantId,
+    text: trimmed,
+    isCorrect,
+    timestamp: now()
+  };
+
+  room.guesses.push(entry);
+
+  if (isCorrect) {
+    room.scores[participantId] = (room.scores[participantId] ?? 0) + 100;
+  } else {
+    room.scores[participantId] = (room.scores[participantId] ?? 0) + 0;
+  }
+
+  room.updatedAt = now();
+  rooms.set(room.code, room);
+
+  return { ok: true as const, room: cloneRoom(room) };
+}
+
 export function toRoomSnapshot(room: Room, viewerParticipantId?: string): RoomSnapshot {
   return {
     code: room.code,
@@ -177,6 +256,9 @@ export function toRoomSnapshot(room: Room, viewerParticipantId?: string): RoomSn
     roundNumber: room.roundNumber,
     drawerId: room.drawerId,
     secretWord: viewerParticipantId === room.drawerId ? room.secretWord : null,
-    orderedWords: [...room.orderedWords]
+    orderedWords: [...room.orderedWords],
+    strokes: [...room.strokes],
+    guesses: [...room.guesses],
+    scores: { ...room.scores }
   };
 }

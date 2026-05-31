@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createRoom, getRoom, joinRoom, listWords, startGame, toRoomSnapshot } from "./roomStore.js";
+import { addStroke, clearStrokes, createRoom, getRoom, joinRoom, listWords, startGame, submitGuess, toRoomSnapshot } from "./roomStore.js";
 
 describe("roomStore", () => {
   it("createRoom sets creator as host", () => {
@@ -158,5 +158,109 @@ describe("roomStore", () => {
     const snapshot = toRoomSnapshot(getRoom(createdRoom.code)!, joiner.participantId);
 
     expect(snapshot.orderedWords).toEqual(expect.arrayContaining(createdRoom.orderedWords));
+  });
+
+  it("addStroke rejects non-drawer", () => {
+    const { room: createdRoom } = createRoom("Alice");
+    const joiner = joinRoom(createdRoom.code, "Bob")!;
+    startGame(createdRoom.code, createdRoom.hostId);
+    const result = addStroke(createdRoom.code, joiner.participantId, {
+      points: [{ x: 0, y: 0 }]
+    });
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toBe("Only the drawer can draw.");
+  });
+
+  it("addStroke appends stroke for drawer", () => {
+    const { room: createdRoom, participantId: hostId } = createRoom("Alice");
+    joinRoom(createdRoom.code, "Bob");
+    startGame(createdRoom.code, hostId);
+    const result = addStroke(createdRoom.code, hostId, {
+      points: [{ x: 10, y: 20 }]
+    });
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.room.strokes).toHaveLength(1);
+      expect(result.room.strokes[0].points).toEqual([{ x: 10, y: 20 }]);
+    }
+  });
+
+  it("clearStrokes clears all strokes for drawer", () => {
+    const { room: createdRoom, participantId: hostId } = createRoom("Alice");
+    joinRoom(createdRoom.code, "Bob");
+    startGame(createdRoom.code, hostId);
+    addStroke(createdRoom.code, hostId, { points: [{ x: 0, y: 0 }] });
+    addStroke(createdRoom.code, hostId, { points: [{ x: 1, y: 1 }] });
+
+    const result = clearStrokes(createdRoom.code, hostId);
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.room.strokes).toHaveLength(0);
+    }
+  });
+
+  it("submitGuess rejects empty guess", () => {
+    const { room: createdRoom, participantId: hostId } = createRoom("Alice");
+    const joiner = joinRoom(createdRoom.code, "Bob")!;
+    startGame(createdRoom.code, hostId);
+
+    const result = submitGuess(createdRoom.code, joiner.participantId, "   ");
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toBe("Guess cannot be empty.");
+  });
+
+  it("submitGuess rejects drawer guess", () => {
+    const { room: createdRoom, participantId: hostId } = createRoom("Alice");
+    joinRoom(createdRoom.code, "Bob")!;
+    startGame(createdRoom.code, hostId);
+
+    const result = submitGuess(createdRoom.code, hostId, "hello");
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toBe("The drawer cannot submit guesses.");
+  });
+
+  it("submitGuess case-insensitive matching", () => {
+    const { room: createdRoom, participantId: hostId } = createRoom("Alice");
+    const joiner = joinRoom(createdRoom.code, "Bob")!;
+    const start = startGame(createdRoom.code, hostId);
+    expect(start.ok).toBe(true);
+    const secretWord = start.ok ? start.room.secretWord! : "";
+
+    const result = submitGuess(createdRoom.code, joiner.participantId, secretWord.toUpperCase());
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      const entry = result.room.guesses[result.room.guesses.length - 1];
+      expect(entry.isCorrect).toBe(true);
+    }
+  });
+
+  it("submitGuess correct guess awards 100 points", () => {
+    const { room: createdRoom, participantId: hostId } = createRoom("Alice");
+    const joiner = joinRoom(createdRoom.code, "Bob")!;
+    const start = startGame(createdRoom.code, hostId);
+    expect(start.ok).toBe(true);
+    const secretWord = start.ok ? start.room.secretWord! : "";
+
+    submitGuess(createdRoom.code, joiner.participantId, secretWord);
+    const room = getRoom(createdRoom.code)!;
+
+    expect(room.scores[joiner.participantId]).toBe(100);
+  });
+
+  it("submitGuess incorrect guess awards 0 points", () => {
+    const { room: createdRoom, participantId: hostId } = createRoom("Alice");
+    const joiner = joinRoom(createdRoom.code, "Bob")!;
+    startGame(createdRoom.code, hostId);
+
+    submitGuess(createdRoom.code, joiner.participantId, "wronganswer");
+    const room = getRoom(createdRoom.code)!;
+
+    expect(room.scores[joiner.participantId]).toBe(0);
   });
 });
