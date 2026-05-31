@@ -110,6 +110,12 @@ export function GamePage() {
 
         <div className="game-page__main">
           <Card title="Canvas">
+            {isDrawer && room.secretWord ? (
+              <div className="word-banner">
+                <span className="word-banner__label">Draw this word</span>
+                <span className="word-banner__word">{room.secretWord}</span>
+              </div>
+            ) : null}
             <DrawingCanvas
               strokes={room.strokes}
               enabled={isDrawer}

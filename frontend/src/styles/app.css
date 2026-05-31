@@ -753,3 +753,31 @@ input {
 .results-panel .button-row {
   margin-top: 24px;
 }
+
+/* ── Word Banner (drawer-only) ── */
+
+.word-banner {
+  text-align: center;
+  padding: 16px;
+  margin-bottom: 16px;
+  background: linear-gradient(135deg, #dbeafe, #ede9fe);
+  border: 2px dashed var(--brand);
+  border-radius: 12px;
+}
+
+.word-banner__label {
+  display: block;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-soft);
+  margin-bottom: 4px;
+}
+
+.word-banner__word {
+  display: block;
+  font-size: 1.75rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  color: var(--brand-strong);
+}
